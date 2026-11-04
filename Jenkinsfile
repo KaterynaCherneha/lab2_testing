@@ -10,15 +10,20 @@ pipeline {
 
         stage('Environment Check') {
             steps {
-                bat 'chcp 65001'
-                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Active Python interpreter:'; & '.\\venv\\Scripts\\python.exe' --version"
+                bat '''
+                    chcp 65001
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Active Python interpreter:'; & '.\\venv\\Scripts\\python.exe' --version"
+                '''
             }
         }
 
         stage('Run Unit Tests') {
             steps {
                 echo 'Запуск модульних тестів салону краси...'
-                powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'D:\\університет\\3\\tp\\lab2_testing'; & '.\\venv\\Scripts\\python.exe' -m unittest test_salon_manager.py"
+                bat '''
+                    chcp 65001
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'D:\\університет\\3\\tp\\lab2_testing'; & '.\\venv\\Scripts\\python.exe' -m unittest test_salon_manager.py"
+                '''
             }
         }
     }
