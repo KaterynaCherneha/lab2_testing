@@ -1,18 +1,17 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Checkout') {
-            steps {
-                echo 'Отримання вихідного коду проєкту...'
-            }
-        }
+    options {
+        skipDefaultCheckout()
+    }
 
+    stages {
         stage('Environment Check') {
             steps {
+                echo 'Перевірка інтерпретатора Python...'
                 bat '''
                     chcp 65001
-                    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Active Python interpreter:'; & '.\\venv\\Scripts\\python.exe' --version"
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Active Python interpreter:'; & 'D:\\університет\\3\\tp\\lab2_testing\\venv\\Scripts\\python.exe' --version"
                 '''
             }
         }
