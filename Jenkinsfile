@@ -1,41 +1,44 @@
 pipeline {
     agent any
-
-    options {
-        skipDefaultCheckout()
-    }
-
+    
     stages {
-        stage('Environment Check') {
+        stage('Checkout') {
             steps {
-                echo 'Перевірка інтерпретатора Python...'
-                bat '''
-                    chcp 65001
-                    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Active Python interpreter:'; & 'D:\\університет\\3\\tp\\lab2_testing\\venv\\Scripts\\python.exe' --version"
-                '''
+                checkout scm
             }
         }
-
-        stage('Run Unit Tests') {
+        
+        stage('Test & XML Report') {
             steps {
-                echo 'Запуск модульних тестів салону краси...'
-                bat '''
-                    chcp 65001
-                    powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'D:\\університет\\3\\tp\\lab2_testing'; & '.\\venv\\Scripts\\python.exe' -m unittest test_salon_manager.py"
-                '''
+                // Встановлюємо плагін для генерації XML-звітів (Вимога 1)
+                sh 'pip install unittest-xml-reporting'
+                
+                // Запускаємо твої тести через xmlrunner. Він створить папку test-reports з XML
+                sh 'python -m xmlrunner test_salon_manager.py -o test-reports'
+            }
+            post {
+                always {
+                    // Вказуємо Jenkins, де шукати згенерований XML для побудови графіків
+                    junit 'test-reports/*.xml'
+                }
             }
         }
-    }
-
-    post {
-        always {
-            echo 'Пайплайн завершив роботу.'
+        
+        stage('Build Docker Image') {
+            steps {
+                // Збираємо образ твого додатку (Вимога 2)
+                sh 'docker build -t KaterynaCherneha/lab2_testing:v1.0 .'
+            }
         }
-        success {
-            echo 'Всі етапи збірки та тести пройшли успішно!'
-        }
-        failure {
-            echo 'Сталася помилка під час виконання збірки.'
+        
+        stage('Push to Docker Hub') {
+            steps {
+                // Завантажуємо образ на Docker Hub (Вимога 2)
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                    sh 'docker push KaterynaCherneha/lab2_testing:v1.0'
+                }
+            }
         }
     }
 }
