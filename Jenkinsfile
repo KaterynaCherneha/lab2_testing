@@ -1,42 +1,41 @@
 pipeline {
     agent any
-    
+    options {
+        skipDefaultCheckout()
+    }
     stages {
-        stage('Checkout') {
+        stage('Test & Generate XML') {
             steps {
-                checkout scm
-            }
-        }
-        
-        stage('Test & XML Report') {
-            steps {
-                // Встановлюємо плагін для генерації XML-звітів (Вимога 1)
-                sh 'pip install unittest-xml-reporting'
-                
-                // Запускаємо твої тести через xmlrunner. Він створить папку test-reports з XML
-                sh 'python -m xmlrunner test_salon_manager.py -o test-reports'
+                echo 'Запуск тестів та генерація XML звіту...'
+                bat '''
+                chcp 65001
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'D:\\університет\\3\\tp\\lab2_testing'; & '.\\venv\\Scripts\\pip.exe' install unittest-xml-reporting; & '.\\venv\\Scripts\\python.exe' -m xmlrunner test_salon_manager.py -o test-reports"
+                '''
             }
             post {
                 always {
-                    // Вказуємо Jenkins, де шукати згенерований XML для побудови графіків
+                    // Пункт 1: Jenkins зчитує XML для графіка
                     junit 'test-reports/*.xml'
                 }
             }
         }
-        
         stage('Build Docker Image') {
             steps {
-                // Збираємо образ твого додатку (Вимога 2)
-                sh 'docker build -t KaterynaCherneha/lab2_testing:v1.0 .'
+                echo 'Створення Docker образу...'
+                // Пункт 2: Створення образу
+                bat '''
+                chcp 65001
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'D:\\університет\\3\\tp\\lab2_testing'; docker build -t katerynacherneha/salon-manager:latest ."
+                '''
             }
         }
-        
         stage('Push to Docker Hub') {
             steps {
-                // Завантажуємо образ на Docker Hub (Вимога 2)
+                echo 'Відправка образу на Docker Hub...'
+                // Пункт 2: Авторизація та відправка образу
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-                    sh 'docker push KaterynaCherneha/lab2_testing:v1.0'
+                    bat 'echo %DOCKER_PASS%| docker login -u %DOCKER_USER% --password-stdin'
+                    bat 'docker push katerynacherneha/salon-manager:latest'
                 }
             }
         }
